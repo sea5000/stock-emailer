@@ -1,0 +1,9 @@
+numpy
+pandas
+matplotlib
+yfinance
+boto3
+botocore
+python-dotenv
+flask
+gunicorn

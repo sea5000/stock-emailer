@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Lots{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <h1>Lots</h1>
+  <a class="button" href="{{ url_for('views.import_csv') }}">Import CSV</a>
+</div>
+
+<form method="post" action="{{ url_for('views.add_lot') }}" class="card lot-form" data-lot-form>
+  <h2 id="form-title">{{ 'Edit lot' if editing else 'Add a lot' }}</h2>
+  <input type="hidden" name="_csrf" value="{{ csrf }}">
+  <input type="hidden" name="lot_id" value="{{ editing.id if editing else '' }}">
+
+  <div class="grid">
+    <label>Symbol
+      <input name="symbol" required autocapitalize="characters" autocomplete="off"
+             spellcheck="false" enterkeyhint="next"
+             list="symbols"
+             value="{{ editing.symbol if editing else '' }}" required>
+    </label>
+    <label>Name
+      <input name="description" autocomplete="off"
+             value="{{ editing.description if editing else '' }}">
+    </label>
+    <label>Shares
+      <input name="qty" type="number" step="any" min="0" inputmode="decimal" required
+             value="{{ editing.qty if editing else '' }}">
+    </label>
+    <label>Purchase date
+      <input name="date_acquired" type="date" required
+             value="{{ editing.date_acquired | iso_date if editing else '' }}">
+    </label>
+    <label>Price each
+      <input name="unit_price" type="number" step="any" min="0" inputmode="decimal" required
+             value="{{ editing.unit_price if editing else '' }}">
+    </label>
+  </div>
+
+  <datalist id="symbols">
+    {% for p in positions %}<option value="{{ p.symbol }}">{{ p.description }}</option>{% endfor %}
+  </datalist>
+
+  <div class="actions">
+    <button class="primary" type="submit">{{ 'Save changes' if editing else 'Add lot' }}</button>
+    <a class="button ghost" href="{{ url_for('views.lots') }}" {% if not editing %}hidden{% endif %}
+       data-cancel-edit>Cancel</a>
+  </div>
+</form>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Symbol</th>
+        <th class="hide-sm">Name</th>
+        <th class="num">Shares</th>
+        <th class="num">Price</th>
+        <th class="hide-sm">Date</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for lot in lots %}
+        <tr>
+          <td><strong>{{ lot.symbol }}</strong></td>
+          <td class="hide-sm">{{ lot.description }}</td>
+          <td class="num">{{ lot.qty | num }}</td>
+          <td class="num">{{ lot.unit_price | money }}</td>
+          <td class="hide-sm">{{ lot.date_acquired }}</td>
+          <td class="row-actions">
+            <a class="button tiny" href="{{ url_for('views.lots', lot=lot.id) }}">Edit</a>
+            <form method="post" action="{{ url_for('views.delete_lot', lot_id=lot.id) }}"
+                  data-confirm="Delete {{ lot.symbol }} ({{ lot.qty | num }} bought {{ lot.date_acquired }})?">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
+              <button class="button tiny danger" type="submit">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="empty" {% if lots %}hidden{% endif %}>No lots yet.</p>
+</div>
+
+<p class="muted small">
+  {{ lots | length }} lot(s) across {{ positions | length }} symbol(s).
+  <a href="{{ url_for('views.export_lots') }}">Download the ledger</a>.
+</p>
+
+{% endblock %}

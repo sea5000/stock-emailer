@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Import CSV{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <h1>Import CSV</h1>
+</div>
+
+{% if not preview %}
+  <form method="post" enctype="multipart/form-data" class="card">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <p class="muted">An FT Gain/Loss export works. Nothing is written until you
+      confirm on the next screen.</p>
+    <label class="file">
+      Choose a CSV
+      <input type="file" name="csv" accept=".csv,text/csv" required>
+    </label>
+    <button class="primary block" type="submit">Preview import</button>
+  </form>
+{% else %}
+  <div class="card">
+    <p class="summary">{{ preview.summary }}</p>
+
+    {% if preview.new %}
+      <h2>{{ preview.new | length }} to add</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Symbol</th><th class="hide-sm">Name</th><th class="num">Shares</th>
+            <th class="num">Price</th><th class="hide-sm">Date</th></tr></thead>
+          <tbody>
+            {% for r in preview.new %}
+              <tr><td><strong>{{ r.symbol }}</strong></td>
+                  <td class="hide-sm">{{ r.description }}</td>
+                  <td class="num">{{ r.qty | num }}</td>
+                  <td class="num">{{ r.price | money }}</td>
+                  <td class="hide-sm">{{ r.date }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+
+    {% if preview.duplicate %}
+      <details class="block">
+        <summary><span class="block-name">{{ preview.duplicate | length }} already in the ledger</span>
+          <span class="block-desc">These will be skipped.</span></summary>
+        <ul class="plain">
+          {% for r in preview.duplicate %}
+            <li>{{ r.symbol }} &middot; {{ r.qty | num }} @ {{ r.price | money }} &middot; {{ r.date }}</li>
+          {% endfor %}
+        </ul>
+      </details>
+    {% endif %}
+
+    {% if preview.invalid %}
+      <details class="block" open>
+        <summary><span class="block-name">{{ preview.invalid | length }} unreadable row(s)</span>
+          <span class="block-desc">These will be ignored.</span></summary>
+        <ul class="plain">
+          {% for r in preview.invalid %}
+            <li><strong>{{ r.get('symbol', '?') }}</strong> - {{ r.get('reason', 'could not be read') }}</li>
+          {% endfor %}
+        </ul>
+      </details>
+    {% endif %}
+
+    <div class="actions">
+      <form method="post" action="{{ url_for('views.import_confirm') }}">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <button class="primary" type="submit" {% if not preview.new %}disabled{% endif %}>
+          Add {{ preview.new | length }} lot(s)
+        </button>
+      </form>
+      <form method="post" action="{{ url_for('views.import_cancel') }}">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <button class="button ghost" type="submit">Cancel</button>
+      </form>
+    </div>
+  </div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,74 @@
+services:
+  stock-emailer:
+    build: .
+    image: stock-emailer:latest
+    container_name: stock-emailer
+    # ENV_FILE can be provided at compose-time to point to any env file on the host.
+    # Example: ENV_FILE=/home/user/aws.env docker-compose up -d
+    #env_file:
+    #  - ${ENV_FILE:-./.env}
+    restart: unless-stopped
+    volumes:
+      # Live data: the whole stack folder is mounted (not a single file, so edits
+      # that replace FT_GainLoss.csv are always seen). The email report is derived
+      # strictly from /app/data/FT_GainLoss.csv; daily snapshots are archived to
+      # /app/data/history for the "change since last checkup" comparison.
+      - ./:/app/data:rw
+      #- ./:/app/extras:rw
+      # Optional: mount AWS credentials from the host so boto3 can pick them up via
+      # the shared credentials file (~/.aws/credentials). This is safer than putting
+      # long-lived secrets into `.env`.
+      #
+      # Linux / macOS example (uncomment to enable):
+      # - /home/you/.aws:/root/.aws:ro
+      #
+      # Windows (PowerShell) example (uncomment to enable). Replace <User>:
+      - ./.env:/root/.env:ro
+      #
+      # Alternative: set an env var and pass it to docker-compose invocation, then
+      # uncomment the line below and run with e.g.:
+      #   $env:AWS_CREDENTIALS_DIR='C:\\Users\\<you>\\.aws'
+      #   docker compose up --build
+      # - ${AWS_CREDENTIALS_DIR}:/root/.aws:ro
+    working_dir: /app
+    # Entrypoint script will start cron and run the scheduled job
+    entrypoint: ["/entrypoint.sh"]
+
+  stock-emailer-web:
+    build: .
+    image: stock-emailer:latest
+    container_name: stock-emailer-web
+    restart: unless-stopped
+    # Same build and same data volume as the cron service, so a lot edited in the
+    # UI is the lot tomorrow's scheduled email reports on. Both containers open
+    # lots.db; it runs in WAL mode so concurrent readers and a writer are fine.
+    volumes:
+      - ./:/app/data:rw
+      - ./.env:/root/.env:ro
+    working_dir: /app
+    # Gunicorn rather than the Flask dev server. Two workers: the report takes a
+    # few seconds to build, and each keeps its own cache, so a second worker
+    # means a second cold fetch after a restart but no queueing while it builds.
+    command:
+      - gunicorn
+      - --bind=0.0.0.0:8099
+      - --workers=2
+      - --timeout=120
+      - --access-logfile=-
+      - --error-logfile=-
+      - web_main:app
+    ports:
+      # Bound to the LAN address, not 0.0.0.0, so the UI is not published to
+      # every interface the host happens to have. Change the IP if the host
+      # moves. No TLS: this is a home LAN behind the router, and the password
+      # is the only thing protecting it. Put it behind a reverse proxy before
+      # exposing it any further.
+      - "0.0.0.0:8099:8099"
+    # The UI is useless without a password, and it is better to fail to start
+    # than to serve the ledger to the whole network in cleartext.
+    environment:
+      - WEB_PASSWORD=${WEB_PASSWORD:?set WEB_PASSWORD in .env}
+      - WEB_SECRET_KEY=${WEB_SECRET_KEY:-}
+      - WEB_HTTPS=${WEB_HTTPS:-0}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - DRY_RUN=${DRY_RUN:-1}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block content %}
+<form method="post" class="card login">
+  <h1>Portfolio</h1>
+  <p class="muted">Sign in to manage lots and the checkup email.</p>
+  <input type="hidden" name="_csrf" value="{{ csrf }}">
+  <input type="hidden" name="next" value="{{ next }}">
+  <label for="password">Password</label>
+  <input id="password" name="password" type="password" autocomplete="current-password"
+         autofocus required inputmode="text" enterkeyhint="go">
+  <button type="submit" class="primary block">Sign in</button>
+</form>
+{% endblock %}

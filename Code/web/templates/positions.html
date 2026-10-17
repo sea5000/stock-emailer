@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Positions{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <h1>Positions</h1>
+  <a class="button" href="{{ url_for('views.lots') }}">Edit lots</a>
+</div>
+
+<div class="stats">
+  <div class="stat"><span class="k">Cost basis</span><span class="v" data-cost>$0</span></div>
+  <div class="stat"><span class="k">Shares</span><span class="v" data-qty>0</span></div>
+  <div class="stat"><span class="k">Symbols</span><span class="v" data-count>0</span></div>
+</div>
+
+<input type="search" id="q" placeholder="Filter by symbol or name" autocomplete="off"
+       enterkeyhint="search" aria-label="Filter positions">
+
+<div class="table-wrap">
+  <table id="positions" data-sort="cost" data-dir="desc">
+    <thead>
+      <tr>
+        <th data-col="symbol" class="num-off">Symbol</th>
+        <th data-col="description" class="hide-sm">Name</th>
+        <th data-col="qty" class="num">Shares</th>
+        <th data-col="avg_cost" class="num">Avg cost</th>
+        <th data-col="cost" class="num">Cost basis</th>
+        <th data-col="lots" class="num hide-sm">Lots</th>
+        <th data-col="first_acquired" class="hide-sm">First</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in positions %}
+        <tr data-symbol="{{ p.symbol }}" data-description="{{ p.description }}">
+          <td><a href="{{ url_for('views.lots', symbol=p.symbol) }}">{{ p.symbol }}</a></td>
+          <td class="hide-sm">{{ p.description }}</td>
+          <td class="num">{{ p.qty | num }}</td>
+          <td class="num">{{ p.avg_cost | money }}</td>
+          <td class="num">{{ p.cost | money }}</td>
+          <td class="num hide-sm">{{ p.lots }}</td>
+          <td class="hide-sm">{{ p.first_acquired or '' }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="empty" {% if positions %}hidden{% endif %}>No lots yet. Add one to get started.</p>
+</div>
+
+<p class="muted small">Cost basis and shares come straight from the ledger. Market
+values need live prices and appear in the checkup email.</p>
+
+<script>
+window.POSITIONS = {{ positions | tojson }};
+</script>
+{% endblock %}

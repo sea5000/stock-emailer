@@ -1,0 +1,42 @@
+# Lint config for stock-emailer.
+#
+# The codebase deliberately uses the root logger (main.py calls
+# logging.basicConfig() once in main()) and broad `except Exception` blocks to
+# degrade gracefully when yfinance or a file read fails. Those are intentional
+# here, so LOG015 and BLE001 are off rather than a mass rewrite.
+
+target-version = "py311"
+line-length = 100
+
+[lint]
+select = [
+    "E4",    # import errors
+    "E7",    # statement errors
+    "E9",    # syntax errors
+    "F",     # pyflakes - unused names, undefined names, f-string bugs
+    "B",     # bugbear
+    "SIM",   # simplifications
+    "UP",    # pyupgrade
+    "RUF",   # ruff-specific
+]
+ignore = [
+    "LOG015",  # root-logger-call - intentional, see above
+    "BLE001",  # blind-except - intentional, see above
+    "SIM105",  # contextlib.suppress reads worse than try/except/pass here
+    "E501",    # line-too-long - the email template has very long HTML lines
+    "RUF001",  # ambiguous-unicode-character - the email uses HTML entities on purpose
+    "RUF002",  # ambiguous-unicode-character-docstring
+    "RUF003",  # ambiguous-unicode-character-comment
+    "B008",    # function-call-in-default-argument - get_setting(key, default=None) is fine
+    "UP031",   # printf-string-formatting - legacy formatting left as-is
+    "RUF046",  # unnecessary-cast-to-int - int() on DB ids documents intent
+]
+
+[lint.per-file-ignores]
+# The email is assembled as long concatenated HTML/CSS strings.
+"Code/email_utils.py" = ["E501", "F541"]
+# CLI entrypoints carry a shebang but are not chmod +x in the image.
+"Code/*.py" = ["EXE001"]
+
+[format]
+quote-style = "double"

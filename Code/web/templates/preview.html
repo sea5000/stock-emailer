@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email preview</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #eef1f5; }
+  iframe { display: block; width: 100%; height: 1200px; border: 0; background: #fff; }
+  .note { font: 13px/1.4 system-ui, sans-serif; color: #555; padding: 8px 12px; }
+  .note.bad { color: #a11; background: #fdecec; }
+  @media (min-width: 700px) {
+    body { padding: 12px; }
+    iframe { border-radius: 8px; box-shadow: 0 1px 6px rgba(0,0,0,.14); }
+  }
+</style>
+</head>
+<body>
+{% if problems %}
+  <p class="note bad">{{ problems | length }} template problem(s):
+    {{ problems | join('; ') }}</p>
+{% endif %}
+{% if dry_run %}
+  <p class="note">DRY_RUN is set. A test send will not actually email anything.</p>
+{% endif %}
+<iframe id="email" title="Rendered email" sandbox=""></iframe>
+<script>
+  // srcdoc is set from JSON rather than interpolated into the attribute, so no
+  // amount of quoting or angle brackets in a template can break out of it.
+  // sandbox="" with no allow-* flags means the rendered email cannot run
+  // scripts, submit forms, or reach this origin.
+  var html = {{ html | tojson }};
+  var frame = document.getElementById("email");
+  frame.srcdoc = html;
+
+  // Tell the parent how tall we are so the outer pane can size itself.
+  function reportHeight() {
+    try {
+      var h = frame.contentDocument.documentElement.scrollHeight;
+      parent.postMessage({ type: "preview-height", height: h }, "*");
+    } catch (e) { /* cross-origin: the parent will fall back to a fixed height */ }
+  }
+  frame.addEventListener("load", function () {
+    reportHeight();
+    setTimeout(reportHeight, 250);
+  });
+</script>
+</body>
+</html>

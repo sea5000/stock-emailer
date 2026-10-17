@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <h1>Settings</h1>
+</div>
+
+<form method="post" class="card">
+  <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+  <p class="muted small">
+    A value here overrides the same variable in <code>.env</code>. Leave a box empty
+    to fall back to <code>.env</code>. AWS credentials are not listed on purpose.
+    They stay in <code>.env</code> and never round-trip through a browser form.
+  </p>
+
+  <div class="grid">
+    {% for key in keys %}
+      <label>{{ key }}
+        <input name="{{ key }}" value="{{ current[key] or '' }}"
+               placeholder="{{ from_env[key] or 'unset' }}"
+               spellcheck="false" autocapitalize="off" autocomplete="off">
+      </label>
+    {% endfor %}
+  </div>
+
+  <button class="primary" type="submit">Save settings</button>
+</form>
+
+<div class="card">
+  <h2>Where things live</h2>
+  <dl class="kv">
+    <dt>Ledger</dt><dd><code>{{ db_path }}</code></dd>
+    <dt>Data directory</dt><dd><code>{{ data_dir }}</code></dd>
+  </dl>
+  <p class="muted small">
+    Both containers share that directory, so changes here show up in the next
+    scheduled email.
+  </p>
+</div>
+
+<div class="card">
+  <h2>Email client</h2>
+  <p class="muted small">
+    Your inbox renders the HTML part if it can and falls back to the plain-text
+    part if it cannot. Edit the HTML blocks with that in mind: keep the tables
+    simple and inline the styles, because mail clients strip
+    <code>&lt;style&gt;</code> and ignore most CSS.
+  </p>
+</div>
+
+{% endblock %}

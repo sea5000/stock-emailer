@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Portfolio{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>&#128200;</text></svg>">
+</head>
+<body>
+
+{% if session.logged_in %}
+<header class="topbar">
+  <button class="nav-toggle" type="button" aria-label="Menu" aria-expanded="false" data-nav-toggle>
+    <span></span><span></span><span></span>
+  </button>
+  <a class="brand" href="{{ url_for('views.positions') }}">Portfolio</a>
+  <form method="post" action="{{ url_for('auth.logout') }}" class="logout">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <button class="link" type="submit">Sign out</button>
+  </form>
+</header>
+<nav class="tabs" data-nav>
+  {% for endpoint, href, label in nav %}
+    <a href="{{ href }}" class="tab{% if request.endpoint == endpoint %} on{% endif %}">{{ label }}</a>
+  {% endfor %}
+</nav>
+{% endif %}
+
+<main>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flashes">
+        {% for category, message in messages %}
+          <p class="flash {{ category }}">{{ message }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</main>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

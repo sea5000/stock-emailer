@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Email{% endblock %}
+{% block content %}
+
+<div class="page-head">
+  <h1>Email</h1>
+</div>
+
+<p class="muted small">
+  Each block is a Jinja template. The numbers are computed for you. Edit the
+  markup, not the arithmetic. A block that does not compile is left out of the
+  email rather than breaking the whole thing.
+</p>
+
+<form method="post" id="editor" class="editor" data-editor>
+  <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+  <div class="toolbar">
+    <button class="primary" type="submit" name="save" value="1">Save</button>
+    <button class="button" type="submit" formaction="{{ url_for('views.preview') }}"
+            formtarget="preview-frame" name="preview" value="1">Preview</button>
+    <button class="button" type="submit" formaction="{{ url_for('views.send_test') }}"
+            name="send" value="1" data-confirm="Send this email to {{ recipient }}?">Send test</button>
+    <button class="button ghost" type="submit" formaction="{{ url_for('views.reset_template', key='all') }}"
+            name="reset" value="all" data-confirm="Reset every template to the original?">Reset all</button>
+  </div>
+
+  <div id="preview-pane" class="preview-pane" hidden>
+    <div class="page-head">
+      <h2>Preview</h2>
+      <button class="button tiny ghost" type="button" data-close-preview>Close</button>
+    </div>
+    <iframe id="preview-frame" name="preview-frame" title="Email preview"
+            sandbox="allow-scripts allow-same-origin" referrerpolicy="no-referrer"></iframe>
+  </div>
+
+  {% if problems %}
+    <div class="flashes">
+      {% for p in problems %}<p class="flash error">{{ p }}</p>{% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="blocks">
+    {% for key in store.order %}
+      {% set cfg = store.sections[key] %}
+      {% set label = section_labels[key] %}
+      <details class="block" data-block {% if loop.first %}open{% endif %}>
+        <summary>
+          <label class="enable" onclick="event.stopPropagation()">
+            <input type="checkbox" name="sections" value="{{ key }}" {% if cfg.enabled %}checked{% endif %}>
+            <span class="sr">{{ label }} on or off</span>
+          </label>
+          <span class="block-name">{{ loop.index }}. {{ label }}</span>
+          <span class="block-desc">{{ section_descriptions[key] }}</span>
+        </summary>
+        <textarea name="html__{{ key }}" rows="10" spellcheck="false"
+                  autocapitalize="off" autocomplete="off" enterkeyhint="done"
+                  data-code>{{ cfg.html }}</textarea>
+        <input type="hidden" name="order" value="{{ key }}">
+        <div class="block-actions">
+          <button class="button tiny ghost" type="submit"
+                  formaction="{{ url_for('views.reset_template', key=key) }}"
+                  data-confirm="Reset &lsquo;{{ label }}&rsquo; to the original?">Reset this block</button>
+        </div>
+      </details>
+    {% endfor %}
+  </div>
+
+  <details class="block">
+    <summary>
+      <label class="enable" onclick="event.stopPropagation()">
+        <input type="checkbox" checked disabled>
+        <span class="sr">Plain text always included</span>
+      </label>
+      <span class="block-name">Plain-text version</span>
+      <span class="block-desc">The alternative part, for text-only mail clients.</span>
+    </summary>
+    <textarea name="text" rows="14" spellcheck="false" autocapitalize="off"
+              autocomplete="off" data-code>{{ store.text }}</textarea>
+    <div class="block-actions">
+      <button class="button tiny ghost" type="submit"
+              formaction="{{ url_for('views.reset_template', key='text') }}"
+              data-confirm="Reset the plain-text template to the original?">Reset to original</button>
+    </div>
+  </details>
+</form>
+
+{% endblock %}
